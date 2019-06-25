@@ -37,8 +37,6 @@
 :- pred get(circle, int).
 :- mode get(circle_in, out) is det.
 
-:- func to_string(circle::circle_in) = (string::out) is det.
-
 :- implementation.
 :- import_module int.
 
@@ -113,6 +111,13 @@ previous(N, !C) :-
 "
     X = Circle->car;
 ").
+
+
+:- interface.
+
+    % this is very limited code that's only intended for circle_test2
+:- func to_string(circle::circle_in) = (string::out) is det.
+:- implementation.
 
 :- pragma foreign_proc("C",
     to_string(Circle::circle_in) = (X::out),
