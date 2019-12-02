@@ -13,6 +13,10 @@ struct Machine {
     int output() { return memory[0]; }
     ref int at(int delta) { return memory[memory[IP+delta]]; }
 
+    this(int[] mem) {
+        memory = mem;
+    }
+
     this(int[] mem, int n, int v) {
         memory = mem;
         noun = n;
