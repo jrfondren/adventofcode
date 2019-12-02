@@ -1,6 +1,6 @@
 DC=dmd
 D=$(DC) -O -release -J.
-BINS=d1 d1_inline d_py1 d_bignum1 d_rust1 d_rust2
+BINS=d1 d2 d1_inline d_py1 d_bignum1 d_rust1 d2_rust1 d_rust2
 
 all: $(BINS)
 
