@@ -85,7 +85,6 @@ void main() {
     import std.stdio : writeln;
     import std.algorithm : map, splitter;
     import std.array : array;
-    import std.string : chomp;
     import std.file : slurp;
 
     Move[][2] input =
