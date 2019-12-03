@@ -1,3 +1,11 @@
+/++
+    Actual Day 3 part 2 code, used to get the answer.
+
+    d1.d didn't set me up very well for part 2, and I came close to having a
+    part2 rank that was lower than my part1 rank as as result.
+
+    The Steps struct is pure flailing--the problem was somewhere else.
++/
 import std;
 
 enum Dir { Up, Down, Left, Right };

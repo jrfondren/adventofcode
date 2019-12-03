@@ -1,3 +1,15 @@
+/++
+    Actual Day 3 part 1 code, used to get the answer.
+
+    Even at the time I thought the bitwise math was a bit gross.
+
+    Still might've gotten on the public leaderboard if not for plotting
+    input[0] twice, instead of plotting input[0] and then input[1]...
+
+    Manhattan Distance comes up a lot in this contest, and every time I forget
+    to optimize it for the common case of a static (0,0) argument. Finally
+    did that with unified.d
++/
 import std;
 
 enum Dir { Up, Down, Left, Right };
