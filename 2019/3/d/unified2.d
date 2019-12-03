@@ -39,7 +39,7 @@ struct Move {
 
 struct Grid {
     import std.typecons : Tuple;
-    import std.algorithm : sort;
+    import std.algorithm : minElement;
     import std.math : abs;
 
     int[Coord][2] grid;
@@ -67,8 +67,8 @@ struct Grid {
     alias Answer = Tuple!(int, "part1", int, "part2");
     Answer solve() {
         return Answer(
-                xdists.values.sort.front,
-                xsteps.values.sort.front);
+                xdists.values.minElement,
+                xsteps.values.minElement);
     }
 }
 
