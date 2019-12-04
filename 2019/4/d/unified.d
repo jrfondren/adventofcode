@@ -41,5 +41,5 @@ void main(string[] args) {
     }
 
     writeln("part1: ", count1);
-    writeln("part1: ", count2);
+    writeln("part2: ", count2);
 }
