@@ -1,3 +1,6 @@
+/++
+    Very slightly cleaned up version of the part1 program.
++/
 import std;
 
 void main() {
