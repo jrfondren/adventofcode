@@ -1,0 +1,6 @@
+name "day15"
+description "Day 15 of Advent of Code"
+authors "Julian Fondren"
+copyright "Copyright © 2019, Julian Fondren"
+license "GPL"
+dependency "nice-curses" version="~>0.2.5"
