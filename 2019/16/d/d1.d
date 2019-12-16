@@ -14,7 +14,7 @@ unittest {
 }
 
 int[] phases(int n, int[] ns) {
-    foreach (i; 0 .. n) { ns = ns.apply; }
+    foreach (i; 0 .. n) ns = ns.apply;
     return ns;
 }
 
@@ -38,16 +38,36 @@ unittest {
     assert(phases(100, "69317163492948606335995924319873".split).join.take(8).array == "52432133");
 }
 
-string part2(int[] input) {
-    return phases(100, input.repeat(10000).joiner.array).drop(input.take(7).join.to!int).take(8).join;
+void runtotaldig(const int[] ns, ref int[] result) {
+    result[0] = ns[0];
+    foreach (i; iota(1, ns.length)) {
+        result[i] = ns[i] + result[i - 1];
+    }
+    foreach (i; iota(ns.length)) {
+        result[i] = result[i] % 10;
+    }
 }
 
-/+
+string part2(int[] input) {
+    auto latter = input.repeat(10000).joiner.array.drop(input.take(7).join.to!int).array;
+    reverse(latter);
+    int[] copy;
+    copy.length = latter.length;
+    foreach (i; 0 .. 100) {
+        runtotaldig(latter, copy);
+        auto t = copy;
+        copy = latter;
+        latter = t;
+    }
+    reverse(latter);
+    return latter.take(8).map!"a % 10".array.join;
+}
+
 unittest {
     assert(part2("03036732577212944063491565474664".split) == "84462026");
     assert(part2("02935109699940807407585447034323".split) == "78725270");
     assert(part2("03081770884921959731165446850517".split) == "53553731");
-}+/
+}
 
 void main(string[] args) {
     enforce(args.length == 2, "usage: <file>");
