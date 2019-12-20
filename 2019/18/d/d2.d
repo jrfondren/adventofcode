@@ -13,18 +13,19 @@ struct Coord {
 class Grid {
     char[81][81] grid;
     Coord[26] keys;
-    Coord entrance;
+    Coord[4] entrance;
 
     char opIndex(Coord c) const { return grid[c.x][c.y]; }
     char opIndex(int x, int y) const { return grid[x][y]; }
 
     this(string map) {
         Coord pos;
+        int ents;
         foreach (string line; map.chomp.splitter('\n')) {
             foreach (char c; line) {
                 if (c == '@') {
                     grid[pos.x][pos.y] = '.';
-                    entrance = pos;
+                    entrance[ents++] = pos;
                 } else if (c.isLower) {
                     keys[c - 'a']  = pos;
                     grid[pos.x][pos.y] = c;
@@ -42,6 +43,7 @@ class Grid {
                     grid[x][y] = '#';
             }
         }
+        assert(ents == 4);
     }
 }
 
@@ -113,13 +115,13 @@ struct Keys {
 
 struct Maze {
     Grid grid;
-    Coord you;
+    Coord[4] you;
     Keys keys;
-    int steps;
+    int[4] steps;
 
     this(Grid g) {
         grid = g;
-        you = g.entrance;
+        you[] = g.entrance;
         foreach (k; 0 .. 26) {
             if (g.keys[k] != Coord.init)
                 keys.keys[k] = true;
@@ -129,9 +131,9 @@ struct Maze {
     void draw(const char[] highlights = "") {
         foreach (y; 0 .. 81) {
             foreach (x; 0 .. 81) {
-                if (highlights.length && y == you.y && x == you.x)
+                if (highlights.length && you[].any!(p => p.x == x && p.y == y))
                     write("\x1b[32;1m@\x1b[0m");
-                else if (y == you.y && x == you.x)
+                else if (you[].any!(p => p.x == x && p.y == y))
                     write('@');
                 else if (grid[x, y] in keys && highlights.indexOf(grid[x, y]) != -1)
                     write("\x1b[31;1m", grid[x, y], "\x1b[0m");
@@ -142,51 +144,14 @@ struct Maze {
             }
             writeln;
         }
-        writeln("Steps: ", steps);
+        writeln("Steps: ", steps[].sum);
     }
 
-    /// expensive, for simple tests
-    void grab(char key) {
-        scope search = new Search();
-        search.findKeys(you, this);
-        grab(key, search.keys.find!(t => t.key == key).front.dist);
-    }
-
-    void grab(char key, int stepsto) {
+    void grab(int i, char key, int stepsto) {
         keys.grab(key);
-        you = grid.keys[key - 'a'];
-        steps += stepsto;
+        you[i] = grid.keys[key - 'a'];
+        steps[i] += stepsto;
     }
-}
-
-unittest {
-    enum map = q"map
-#########
-#b.A.@.a#
-#########
-map";
-    auto g = Maze(new Grid(map));
-    g.grab('a');
-    g.grab('b');
-    assert(g.steps == 8);
-}
-
-unittest {
-    enum map = q"map
-########################
-#f.D.E.e.C.b.A.@.a.B.c.#
-######################.#
-#d.....................#
-########################
-map";
-    Maze g1 = Maze(new Grid(map));
-    Maze g2 = g1;
-    foreach (key; "abcdef")
-        g1.grab(key);
-    assert(g1.steps == 86);
-    foreach (key; "abcedf")
-        g2.grab(key);
-    assert(g2.steps == 114);
 }
 
 class Plan {
@@ -195,9 +160,9 @@ class Plan {
     bool[26] keysGrabbed;
     bool done;
 
-    void grab(char key, int dist, int limit) {
-        maze.grab(key, dist);
-        if (maze.steps > limit)
+    void grab(int i, char key, int dist, int limit) {
+        maze.grab(i, key, dist);
+        if (maze.steps[].sum > limit)
             done = true;
         else {
             plan ~= key;
@@ -208,7 +173,7 @@ class Plan {
     this(Plan other) {
         maze = other.maze;
         plan = other.plan.dup;
-        keysGrabbed = other.keysGrabbed;
+        keysGrabbed[] = other.keysGrabbed;
     }
 
     this(Maze m) {
@@ -219,36 +184,49 @@ class Plan {
 alias PlayResult = Tuple!(int, "steps", char[], "plan");
 
 void advance(Plan p, ref Plan[] plans, ref PlayResult result) {
-    scope search = new Search();
-    switch (search.findKeys(p.maze.you, p.maze)) {
+    scope Search*[] ps = [
+        new Search(), new Search(),
+        new Search(), new Search()
+    ];
+    switch (iota(4).map!(i => ps[i].findKeys(p.maze.you[i], p.maze)).sum) {
         case 0:
             p.done = true;
-            if (p.maze.steps < result.steps) {
-                result.steps = p.maze.steps;
+            writeln(p.maze.steps[].sum);
+            if (p.maze.steps[].sum < result.steps) {
+                result.steps = p.maze.steps[].sum;
                 result.plan = cast(char[]) p.plan;
                 writeln("new best: ", result);
             }
             break;
+        /+case 1:
+            auto keydist = ps.find!"a.keys.length > 0".front.keys[0];
+            auto i = iota(4).find!(n => ps[n].keys.length > 0).front;
+            p.grab(i, keydist.key, keydist.dist, result.steps);
+            break;+/
         default:
-            foreach (keydist; search.keys.drop(1)) {
-                if (p.maze.steps + keydist.dist < result.steps) {
-                    plans ~= new Plan(p);
-                    plans[$ - 1].grab(keydist.key, keydist.dist, result.steps);
+            foreach (i; iota(4).filter!(n => ps[n].keys.length > 0)) {
+                foreach (keydist; ps[i].keys.drop(1)) {
+                    if (p.maze.steps[].sum + keydist.dist < result.steps) {
+                        plans ~= new Plan(p);
+                        plans[$ - 1].grab(i, keydist.key, keydist.dist, result.steps);
+                    }
                 }
+                auto keydist = ps[i].keys[0];
+                plans ~= new Plan(p);
+                plans[$ - 1].grab(i, keydist.key, keydist.dist, result.steps);
             }
-            auto keydist = search.keys[0];
-            p.grab(keydist.key, keydist.dist, result.steps);
-            break;
+            p.done = true;
     }
 }
 
 void join(Plan p, size_t pi, ref Plan[] plans) {
     ubyte last = p.plan[$ - 1];
-    int steps = p.maze.steps;
+    int steps = p.maze.steps[].sum;
     foreach (i; 0 .. plans.length) {
         if (i == pi) continue;
-        if (steps != plans[i].maze.steps) continue;
+        if (steps != plans[i].maze.steps[].sum) continue;
         if (last != plans[i].plan[$ - 1]) continue;
+        if (p.maze.you != plans[i].maze.you) continue;
         if (p.keysGrabbed != plans[i].keysGrabbed) continue;
         plans[i].done = true;
     }
@@ -273,82 +251,73 @@ PlayResult play(Maze maze, int target) {
 
 unittest {
     enum map = q"map
-#########
-#b.A.@.a#
-#########
+#######
+#a.#Cd#
+##@#@##
+#######
+##@#@##
+#cB#Ab#
+#######
 map";
     auto g = Maze(new Grid(map));
     auto res = play(g, 10);
+    writeln(res);
     assert(res.steps == 8);
-    assert(res.plan == "ab");
 }
 
 unittest {
     enum map = q"map
-########################
-#f.D.E.e.C.b.A.@.a.B.c.#
-######################.#
-#d.....................#
-########################
+###############
+#d.ABC.#.....a#
+######@#@######
+###############
+######@#@######
+#b.....#.....c#
+###############
 map";
     auto g = Maze(new Grid(map));
-    auto res = play(g, 90);
-    assert(res.steps == 86);
-    assert(res.plan == "abcdef");
+    auto res = play(g, 30);
+    writeln(res);
+    assert(res.steps == 24);
 }
 
 unittest {
     enum map = q"map
-########################
-#...............b.C.D.f#
-#.######################
-#.....@.a.B.c.d.A.e.F.g#
-########################
+#############
+#DcBa.#.GhKl#
+#.###@#@#I###
+#e#d#####j#k#
+###C#@#@###J#
+#fEbA.#.FgHi#
+#############
 map";
     auto g = Maze(new Grid(map));
-    auto res = play(g, 135);
-    assert(res.steps == 132);
-    assert(res.plan == "bacdfeg");
+    auto res = play(g, 100);
+    writeln(res);
+    assert(res.steps == 32);
 }
 
 unittest {
     enum map = q"map
-#################
-#i.G..c...e..H.p#
-########.########
-#j.A..b...f..D.o#
-########@########
-#k.E..a...g..B.n#
-########.########
-#l.F..d...h..C.m#
-#################
+#############
+#g#f.D#..h#l#
+#F###e#E###.#
+#dCba@#@BcIJ#
+#############
+#nK.L@#@G...#
+#M###N#H###.#
+#o#m..#i#jk.#
+#############
 map";
     auto g = Maze(new Grid(map));
-    auto res = play(g, 140);
-    assert(res.steps == 136);
-    writeln(res.plan);
-    assert(res.plan == "afbjgnhdloepcikm" || res.plan == "cefdlhmakobjgnip" || res.plan == "dhgciepakbjfonml" || res.plan == "bfceakdlhmgnjoip");
-}
-
-unittest {
-    enum map = q"map
-########################
-#@..............ac.GI.b#
-###d#e#f################
-###A#B#C################
-###g#h#i################
-########################
-map";
-    auto g = Maze(new Grid(map));
-    auto res = play(g, 85);
-    assert(res.steps == 81);
-    assert(res.plan == "acfidgbeh" || res.plan == "acdgfibeh");
+    auto res = play(g, 100);
+    writeln(res);
+    assert(res.steps == 72);
 }
 
 void main(string[] args) {
     auto g = Maze(new Grid(readText("input.txt")));
-    g.draw;
-    auto res = play(g, 3348);
+    auto res = play(g, 2000); // 1700 too high
     File("sols.log", "a").writeln(res.steps, " ", res.plan);
     writeln(res);
 }
