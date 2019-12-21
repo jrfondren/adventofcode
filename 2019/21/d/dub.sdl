@@ -1,0 +1,5 @@
+name "day21"
+description "Day 21 of Advent of Code"
+authors "Julian Fondren"
+copyright "Copyright © 2019, Julian Fondren"
+license "GPL"
