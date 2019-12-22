@@ -43,14 +43,12 @@ unittest {
 }
 
 int[] shuffle(int[] cards, Deal[] strategy) {
-    assert(cards.countUntil(2019) != -1);
     foreach (deal; strategy) {
         final switch (deal.type) {
             case Deal.Type.NewStack: cards = reverse(cards); break;
             case Deal.Type.Cut: cut(deal.n, cards); break;
             case Deal.Type.Incr: inc(deal.n, cards); break;
         }
-        assert(cards.countUntil(2019) != -1);
     }
     return cards;
 }
