@@ -1,0 +1,5 @@
+name "day23"
+description "Day 23 of Advent of Code"
+authors "Julian Fondren"
+copyright "Copyright © 2019, Julian Fondren"
+license "GPL"
