@@ -1,0 +1,5 @@
+name "day25"
+description "Day 25 of Advent of Code"
+authors "Julian Fondren"
+copyright "Copyright © 2019, Julian Fondren"
+license "GPL"
